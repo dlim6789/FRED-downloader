@@ -1,36 +1,578 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Silly Index Page</title>
-  <style>
-    body {
-      font-family: Comic Sans MS, cursive, sans-serif;
-      text-align: center;
-      background-color: #ffefd5;
-    }
-    h1 {
-      color: hotpink;
-      animation: wiggle 1s infinite alternate;
-    }
-    @keyframes wiggle {
-      from { transform: rotate(-5deg); }
-      to { transform: rotate(5deg); }
-    }
-    button {
-      font-size: 20px;
-      padding: 10px 20px;
-      border-radius: 12px;
-      border: 2px solid purple;
-      background: yellow;
-      cursor: pointer;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FRED API Data Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus, input[type="password"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c00;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .success {
+            background: #efe;
+            border: 1px solid #cfc;
+            color: #060;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .metadata {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .metadata h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .metadata-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .metadata-item:last-child {
+            border-bottom: none;
+        }
+
+        .metadata-label {
+            font-weight: 600;
+            color: #666;
+        }
+
+        .metadata-value {
+            color: #333;
+            text-align: right;
+            max-width: 60%;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .data-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .data-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .data-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .chart-container {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        #chart {
+            width: 100%;
+            height: 400px;
+        }
+
+        .example-series {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f0f4f8;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .example-series strong {
+            color: #667eea;
+        }
+    </style>
 </head>
 <body>
-  <h1>🎉 Welcome to the Silly Page 🎉</h1>
-  <p>This page has absolutely no purpose except to be silly. 🐒</p>
-  <button onclick="alert('QUACK! 🦆')">Click me for a duck</button>
-  <p>✨ Thanks for visiting! ✨</p>
+    <div class="container">
+        <div class="header">
+            <h1>📊 FRED API Data Viewer</h1>
+            <p>Federal Reserve Economic Data - Series Explorer</p>
+        </div>
+
+        <div class="card" style="background: #e8f4fd; border: 2px solid #2196F3;">
+            <p><strong>💡 Important:</strong> This app must be run from a local web server (not as a file://) due to browser security restrictions. 
+            If you encounter errors, see the instructions that will appear. The easiest method is using Python's built-in server 
+            with the command: <code>python -m http.server 8000</code></p>
+        </div>
+
+        <div class="card">
+            <div class="input-group">
+                <label for="apiKey">API Key</label>
+                <input type="password" id="apiKey" placeholder="Enter your FRED API key (32 characters)">
+            </div>
+
+            <div class="input-group">
+                <label for="seriesId">Series ID</label>
+                <input type="text" id="seriesId" placeholder="Enter series ID (e.g., GNPCA, GDP, UNRATE)">
+                <div class="example-series">
+                    <strong>Popular series:</strong> GDP (Gross Domestic Product), UNRATE (Unemployment Rate), 
+                    CPIAUCSL (Consumer Price Index), DFF (Federal Funds Rate), GNPCA (Real GNP)
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn-primary" onclick="fetchData()">Fetch Data</button>
+                <button class="btn-secondary" onclick="clearResults()">Clear Results</button>
+            </div>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        async function fetchData() {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const seriesId = document.getElementById('seriesId').value.trim().toUpperCase();
+            const resultsDiv = document.getElementById('results');
+
+            // Validation
+            if (!apiKey) {
+                showError('Please enter your API key');
+                return;
+            }
+
+            if (!seriesId) {
+                showError('Please enter a series ID');
+                return;
+            }
+
+            // Show loading
+            resultsDiv.innerHTML = `
+                <div class="card">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Fetching data from FRED API...</p>
+                    </div>
+                </div>
+            `;
+
+            try {
+                // Construct URLs
+                const seriesUrl = `https://api.stlouisfed.org/fred/series?series_id=${seriesId}&api_key=${apiKey}&file_type=json`;
+                const obsUrl = `https://api.stlouisfed.org/fred/series/observations?series_id=${seriesId}&api_key=${apiKey}&file_type=json&sort_order=desc&limit=100`;
+
+                // Fetch series metadata
+                const seriesResponse = await fetch(seriesUrl);
+                
+                if (!seriesResponse.ok) {
+                    throw new Error(`HTTP error! status: ${seriesResponse.status}`);
+                }
+                
+                const seriesData = await seriesResponse.json();
+
+                if (!seriesData.seriess || seriesData.seriess.length === 0) {
+                    throw new Error('Series not found. Please check the series ID.');
+                }
+
+                // Fetch observations data
+                const obsResponse = await fetch(obsUrl);
+                
+                if (!obsResponse.ok) {
+                    throw new Error(`HTTP error! status: ${obsResponse.status}`);
+                }
+                
+                const obsData = await obsResponse.json();
+
+                // Display results
+                displayResults(seriesData.seriess[0], obsData.observations);
+
+            } catch (error) {
+                if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+                    showError(`Cannot connect to FRED API. If you're running this file locally (file://), you need to use a local web server due to CORS restrictions.`);
+                    showCorsInstructions();
+                } else {
+                    showError(`Error fetching data: ${error.message}`);
+                }
+            }
+        }
+
+        function showCorsInstructions() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML += `
+                <div class="card">
+                    <h3>📚 How to Run This App Properly</h3>
+                    <div class="metadata">
+                        <p style="margin-bottom: 15px;">The FRED API doesn't allow direct access from local files. You need to run a local web server:</p>
+                        
+                        <p><strong>Option 1: Python (usually pre-installed on Mac/Linux)</strong></p>
+                        <pre style="background: #f0f0f0; padding: 10px; border-radius: 5px; margin: 10px 0; overflow-x: auto;">
+# Navigate to the folder containing your HTML file, then run:
+
+# For Python 3:
+python -m http.server 8000
+
+# For Python 2:
+python -m SimpleHTTPServer 8000</pre>
+                        <p>Then open your browser to: <a href="http://localhost:8000/fred-api-viewer.html" target="_blank">http://localhost:8000/fred-api-viewer.html</a></p>
+                        
+                        <p style="margin-top: 20px;"><strong>Option 2: Node.js http-server</strong></p>
+                        <pre style="background: #f0f0f0; padding: 10px; border-radius: 5px; margin: 10px 0; overflow-x: auto;">
+# First install globally (one time only):
+npm install -g http-server
+
+# Then run in the folder with your HTML:
+http-server -p 8000</pre>
+                        <p>Then open: <a href="http://localhost:8000/fred-api-viewer.html" target="_blank">http://localhost:8000/fred-api-viewer.html</a></p>
+                        
+                        <p style="margin-top: 20px;"><strong>Option 3: VS Code Live Server Extension</strong></p>
+                        <ol style="margin-left: 20px;">
+                            <li>Install VS Code if you don't have it</li>
+                            <li>Install the "Live Server" extension by Ritwick Dey</li>
+                            <li>Right-click your HTML file and select "Open with Live Server"</li>
+                        </ol>
+                        
+                        <p style="margin-top: 20px;"><strong>Option 4: Use any other local web server</strong></p>
+                        <p>XAMPP, WAMP, MAMP, or any other local server will work</p>
+                        
+                        <div style="margin-top: 20px; padding: 15px; background: #e8f4fd; border-left: 4px solid #2196F3; border-radius: 5px;">
+                            <strong>💡 Why is this needed?</strong><br>
+                            Web browsers block requests from local files to APIs for security reasons (CORS policy). 
+                            Running a local server makes your browser treat the file as being served from a web server, which allows the API calls to work.
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function displayResults(series, observations) {
+            const resultsDiv = document.getElementById('results');
+            
+            // Create metadata card
+            const metadataHtml = `
+                <div class="card">
+                    <h2>📈 Series Information</h2>
+                    <div class="metadata">
+                        <h3>${series.title}</h3>
+                        <div class="metadata-item">
+                            <span class="metadata-label">Series ID:</span>
+                            <span class="metadata-value">${series.id}</span>
+                        </div>
+                        <div class="metadata-item">
+                            <span class="metadata-label">Units:</span>
+                            <span class="metadata-value">${series.units}</span>
+                        </div>
+                        <div class="metadata-item">
+                            <span class="metadata-label">Frequency:</span>
+                            <span class="metadata-value">${series.frequency}</span>
+                        </div>
+                        <div class="metadata-item">
+                            <span class="metadata-label">Seasonal Adjustment:</span>
+                            <span class="metadata-value">${series.seasonal_adjustment}</span>
+                        </div>
+                        <div class="metadata-item">
+                            <span class="metadata-label">Last Updated:</span>
+                            <span class="metadata-value">${new Date(series.last_updated).toLocaleString()}</span>
+                        </div>
+                        <div class="metadata-item">
+                            <span class="metadata-label">Data Range:</span>
+                            <span class="metadata-value">${series.observation_start} to ${series.observation_end}</span>
+                        </div>
+                        ${series.notes ? `
+                        <div class="metadata-item">
+                            <span class="metadata-label">Notes:</span>
+                            <span class="metadata-value">${series.notes}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+
+            // Create data table
+            const dataTableHtml = `
+                <div class="card">
+                    <h2>📊 Recent Observations (Latest 100)</h2>
+                    <div class="success">Successfully fetched ${observations.length} data points</div>
+                    <div style="overflow-x: auto;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${observations.map(obs => `
+                                    <tr>
+                                        <td>${obs.date}</td>
+                                        <td>${obs.value === '.' ? 'N/A' : parseFloat(obs.value).toLocaleString()}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+
+            // Create simple chart
+            const chartHtml = `
+                <div class="card">
+                    <h2>📉 Data Visualization</h2>
+                    <div class="chart-container">
+                        <canvas id="chart"></canvas>
+                    </div>
+                </div>
+            `;
+
+            resultsDiv.innerHTML = metadataHtml + dataTableHtml + chartHtml;
+
+            // Draw chart
+            drawChart(observations.slice().reverse(), series.title);
+        }
+
+        function drawChart(observations, title) {
+            const canvas = document.getElementById('chart');
+            const ctx = canvas.getContext('2d');
+            
+            // Filter valid observations
+            const validObs = observations.filter(obs => obs.value !== '.');
+            
+            if (validObs.length === 0) return;
+
+            // Set canvas size
+            canvas.width = canvas.offsetWidth;
+            canvas.height = 400;
+
+            const padding = 60;
+            const width = canvas.width - 2 * padding;
+            const height = canvas.height - 2 * padding;
+
+            // Find min and max values
+            const values = validObs.map(obs => parseFloat(obs.value));
+            const minValue = Math.min(...values);
+            const maxValue = Math.max(...values);
+            const valueRange = maxValue - minValue;
+
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw axes
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, canvas.height - padding);
+            ctx.lineTo(canvas.width - padding, canvas.height - padding);
+            ctx.stroke();
+
+            // Draw data line
+            ctx.strokeStyle = '#667eea';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+
+            validObs.forEach((obs, index) => {
+                const x = padding + (index / (validObs.length - 1)) * width;
+                const y = canvas.height - padding - ((parseFloat(obs.value) - minValue) / valueRange) * height;
+                
+                if (index === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+
+            ctx.stroke();
+
+            // Add labels
+            ctx.fillStyle = '#333';
+            ctx.font = '12px sans-serif';
+            
+            // Y-axis labels
+            ctx.textAlign = 'right';
+            ctx.fillText(maxValue.toLocaleString(), padding - 10, padding + 10);
+            ctx.fillText(minValue.toLocaleString(), padding - 10, canvas.height - padding);
+            
+            // X-axis labels
+            ctx.textAlign = 'center';
+            if (validObs.length > 0) {
+                ctx.fillText(validObs[0].date, padding, canvas.height - padding + 20);
+                ctx.fillText(validObs[validObs.length - 1].date, canvas.width - padding, canvas.height - padding + 20);
+            }
+        }
+
+        function showError(message) {
+            const resultsDiv = document.getElementById('results');
+            const errorHtml = `
+                <div class="card">
+                    <div class="error">
+                        ⚠️ ${message}
+                    </div>
+                </div>
+            `;
+            
+            // Don't replace if we're adding CORS instructions
+            if (message.includes('CORS')) {
+                resultsDiv.innerHTML = errorHtml;
+            } else {
+                resultsDiv.innerHTML = errorHtml;
+            }
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('seriesId').value = '';
+        }
+
+        // Allow Enter key to submit
+        document.getElementById('seriesId').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                fetchData();
+            }
+        });
+
+        document.getElementById('apiKey').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                fetchData();
+            }
+        });
+    </script>
 </body>
 </html>
