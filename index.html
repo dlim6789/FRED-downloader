@@ -238,12 +238,6 @@
             <p>Federal Reserve Economic Data - Series Explorer</p>
         </div>
 
-        <div class="card" style="background: #e8f4fd; border: 2px solid #2196F3;">
-            <p><strong>💡 Important:</strong> This app must be run from a local web server (not as a file://) due to browser security restrictions. 
-            If you encounter errors, see the instructions that will appear. The easiest method is using Python's built-in server 
-            with the command: <code>python -m http.server 8000</code></p>
-        </div>
-
         <div class="card">
             <div class="input-group">
                 <label for="apiKey">API Key</label>
@@ -327,60 +321,11 @@
 
             } catch (error) {
                 if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-                    showError(`Cannot connect to FRED API. If you're running this file locally (file://), you need to use a local web server due to CORS restrictions.`);
-                    showCorsInstructions();
+                    showError('Cannot connect to FRED API. Please check your internet connection or API key.');
                 } else {
                     showError(`Error fetching data: ${error.message}`);
                 }
             }
-        }
-
-        function showCorsInstructions() {
-            const resultsDiv = document.getElementById('results');
-            resultsDiv.innerHTML += `
-                <div class="card">
-                    <h3>📚 How to Run This App Properly</h3>
-                    <div class="metadata">
-                        <p style="margin-bottom: 15px;">The FRED API doesn't allow direct access from local files. You need to run a local web server:</p>
-                        
-                        <p><strong>Option 1: Python (usually pre-installed on Mac/Linux)</strong></p>
-                        <pre style="background: #f0f0f0; padding: 10px; border-radius: 5px; margin: 10px 0; overflow-x: auto;">
-# Navigate to the folder containing your HTML file, then run:
-
-# For Python 3:
-python -m http.server 8000
-
-# For Python 2:
-python -m SimpleHTTPServer 8000</pre>
-                        <p>Then open your browser to: <a href="http://localhost:8000/fred-api-viewer.html" target="_blank">http://localhost:8000/fred-api-viewer.html</a></p>
-                        
-                        <p style="margin-top: 20px;"><strong>Option 2: Node.js http-server</strong></p>
-                        <pre style="background: #f0f0f0; padding: 10px; border-radius: 5px; margin: 10px 0; overflow-x: auto;">
-# First install globally (one time only):
-npm install -g http-server
-
-# Then run in the folder with your HTML:
-http-server -p 8000</pre>
-                        <p>Then open: <a href="http://localhost:8000/fred-api-viewer.html" target="_blank">http://localhost:8000/fred-api-viewer.html</a></p>
-                        
-                        <p style="margin-top: 20px;"><strong>Option 3: VS Code Live Server Extension</strong></p>
-                        <ol style="margin-left: 20px;">
-                            <li>Install VS Code if you don't have it</li>
-                            <li>Install the "Live Server" extension by Ritwick Dey</li>
-                            <li>Right-click your HTML file and select "Open with Live Server"</li>
-                        </ol>
-                        
-                        <p style="margin-top: 20px;"><strong>Option 4: Use any other local web server</strong></p>
-                        <p>XAMPP, WAMP, MAMP, or any other local server will work</p>
-                        
-                        <div style="margin-top: 20px; padding: 15px; background: #e8f4fd; border-left: 4px solid #2196F3; border-radius: 5px;">
-                            <strong>💡 Why is this needed?</strong><br>
-                            Web browsers block requests from local files to APIs for security reasons (CORS policy). 
-                            Running a local server makes your browser treat the file as being served from a web server, which allows the API calls to work.
-                        </div>
-                    </div>
-                </div>
-            `;
         }
 
         function displayResults(series, observations) {
@@ -547,13 +492,8 @@ http-server -p 8000</pre>
                     </div>
                 </div>
             `;
-            
-            // Don't replace if we're adding CORS instructions
-            if (message.includes('CORS')) {
-                resultsDiv.innerHTML = errorHtml;
-            } else {
-                resultsDiv.innerHTML = errorHtml;
-            }
+
+            resultsDiv.innerHTML = errorHtml;
         }
 
         function clearResults() {
